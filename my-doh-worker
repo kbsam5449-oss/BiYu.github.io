@@ -1,0 +1,40 @@
+export default {
+  async fetch(request) {
+    const url = new URL(request.url);
+
+    // 只处理 /dns-query
+    if (url.pathname !== "/dns-query") {
+      return new Response("DoH server is running", { status: 200 });
+    }
+
+    // GET 请求（RFC8484）
+    if (request.method === "GET") {
+      const dns = url.searchParams.get("dns");
+      if (!dns) {
+        return new Response("Missing dns parameter", { status: 400 });
+      }
+
+      return fetch(
+        "https://cloudflare-dns.com/dns-query?dns=" + dns,
+        {
+          headers: {
+            "Accept": "application/dns-message"
+          }
+        }
+      );
+    }
+
+    // POST 请求（RFC8484）
+    if (request.method === "POST") {
+      return fetch("https://cloudflare-dns.com/dns-query", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/dns-message"
+        },
+        body: request.body
+      });
+    }
+
+    return new Response("Method Not Allowed", { status: 405 });
+  }
+}
